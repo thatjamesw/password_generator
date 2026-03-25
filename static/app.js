@@ -12,6 +12,7 @@ const AMBIGUOUS_SYMBOLS = new Set("{}[]()/\\'\"`~,;:.<>".split(""));
 
 const elements = {
   lengthInput: document.querySelector("#length-input"),
+  lengthValue: document.querySelector("#length-value"),
   countInput: document.querySelector("#count-input"),
   presetSelect: document.querySelector("#strength-select"),
   customCharset: document.querySelector("#custom-charset"),
@@ -45,6 +46,11 @@ const elements = {
   outputStatus: document.querySelector("#output-status"),
   outputNote: document.querySelector("#output-note"),
   output: document.querySelector("#output"),
+  typeButtons: [...document.querySelectorAll(".type-pill")],
+  numbersCard: document.querySelector("#numbers-card"),
+  symbolsCard: document.querySelector("#symbols-card"),
+  uppercaseCard: document.querySelector("#uppercase-card"),
+  lowercaseCard: document.querySelector("#lowercase-card"),
 };
 
 let currentPasswords = [];
@@ -61,6 +67,14 @@ function setStatus(message, kind = "") {
 function setOutputStatus(message, kind = "") {
   elements.outputStatus.textContent = message;
   elements.outputStatus.className = `status${kind ? ` ${kind}` : ""}`;
+}
+
+function setToggleAvailability(element, enabled) {
+  element.disabled = !enabled;
+  const card = element.closest(".toggle-card");
+  if (card) {
+    card.classList.toggle("disabled", !enabled);
+  }
 }
 
 function uniqueChars(chars) {
@@ -245,6 +259,8 @@ function clamp(value, min, max) {
 }
 
 function applyPreset(preset) {
+  elements.presetSelect.value = preset;
+
   if (preset === "default") {
     elements.lengthInput.value = "32";
     elements.countInput.value = "1";
@@ -255,6 +271,7 @@ function applyPreset(preset) {
     elements.symbolsToggle.checked = true;
     elements.excludeSimilarToggle.checked = false;
     elements.weightedOnlyToggle.checked = false;
+    syncQuickMode("default");
     return;
   }
 
@@ -268,6 +285,7 @@ function applyPreset(preset) {
     elements.symbolsToggle.checked = true;
     elements.excludeSimilarToggle.checked = true;
     elements.weightedOnlyToggle.checked = false;
+    syncQuickMode("default");
     return;
   }
 
@@ -281,6 +299,7 @@ function applyPreset(preset) {
     elements.symbolsToggle.checked = false;
     elements.excludeSimilarToggle.checked = true;
     elements.weightedOnlyToggle.checked = false;
+    syncQuickMode("memorable");
     return;
   }
 
@@ -294,6 +313,7 @@ function applyPreset(preset) {
     elements.symbolsToggle.checked = false;
     elements.excludeSimilarToggle.checked = false;
     elements.weightedOnlyToggle.checked = false;
+    syncQuickMode("pin");
     return;
   }
 
@@ -307,7 +327,34 @@ function applyPreset(preset) {
     elements.symbolsToggle.checked = false;
     elements.excludeSimilarToggle.checked = false;
     elements.weightedOnlyToggle.checked = false;
+    syncQuickMode("hex");
   }
+}
+
+function syncQuickMode(preset) {
+  const quickType = preset === "secure" ? "default" : preset;
+  elements.lengthValue.textContent = elements.lengthInput.value;
+
+  for (const button of elements.typeButtons) {
+    const active = button.dataset.type === quickType;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", active ? "true" : "false");
+  }
+
+  const randomLike = quickType === "default";
+  const memorable = quickType === "memorable";
+  const pin = quickType === "pin";
+  const hex = quickType === "hex";
+
+  setToggleAvailability(elements.uppercaseToggle, !pin && !hex);
+  setToggleAvailability(elements.lowercaseToggle, !pin && !hex);
+  setToggleAvailability(elements.numbersToggle, !hex);
+  setToggleAvailability(elements.symbolsToggle, randomLike);
+
+  elements.numbersCard.classList.toggle("highlighted", randomLike || memorable || pin);
+  elements.symbolsCard.classList.toggle("highlighted", randomLike);
+  elements.uppercaseCard.classList.toggle("highlighted", randomLike || memorable);
+  elements.lowercaseCard.classList.toggle("highlighted", randomLike || memorable || hex);
 }
 
 function getConfig() {
@@ -347,13 +394,14 @@ function updatePolicyPreview() {
     const entropyBits = estimateEntropyBits(config.length, detail.allChars);
     const summaryLabels = detail.activeLabels.join(", ").toLowerCase();
     const coverageActive = detail.mode === "classes";
+    const displayMode = elements.presetSelect.value === "default" ? "random" : elements.presetSelect.value;
 
     elements.metricPoolSize.textContent = String(uniquePool.length);
     elements.metricRequired.textContent = String(detail.pools.length);
     elements.metricCount.textContent = String(currentPasswords.length);
     elements.metricEntropy.textContent = config.showEntropy ? entropyBits.toFixed(2) : "off";
     elements.metricStrength.textContent = config.showEntropy ? entropyLabel(entropyBits) : "hidden";
-    elements.metricMode.textContent = detail.mode;
+    elements.metricMode.textContent = displayMode;
     elements.poolModeBadge.textContent = detail.mode === "custom" ? "Custom set" : "Class-based";
     elements.poolDescription.textContent =
       detail.mode === "custom"
@@ -367,11 +415,12 @@ function updatePolicyPreview() {
     elements.rulesPreview.textContent = coverageActive
       ? `${detail.activeLabels.join(", ")} will each appear at least once.`
       : "Characters are drawn from your custom set with optional duplicate weighting.";
-    elements.policySummary.textContent = `${config.length} characters, ${config.count} password${config.count === 1 ? "" : "s"}, ${detail.mode === "custom" ? "custom charset" : summaryLabels}, local-only generation.`;
+    elements.policySummary.textContent = `${config.length} characters, ${config.count} password${config.count === 1 ? "" : "s"}, ${detail.mode === "custom" ? "custom charset" : displayMode}, generated locally.`;
     elements.policyBanner.textContent = coverageActive
       ? "Class coverage is active, so each enabled class is represented in every generated password."
       : "Custom mode is active, which gives full control over the character pool.";
     elements.policyBanner.className = `risk-banner ${coverageActive ? "safe" : ""}`.trim();
+    elements.lengthValue.textContent = String(config.length);
   } catch (error) {
     elements.metricPoolSize.textContent = "0";
     elements.metricRequired.textContent = "0";
@@ -387,6 +436,7 @@ function updatePolicyPreview() {
     elements.policySummary.textContent = error.message;
     elements.policyBanner.textContent = error.message;
     elements.policyBanner.className = "risk-banner warn";
+    elements.lengthValue.textContent = elements.lengthInput.value;
   }
 }
 
@@ -408,6 +458,10 @@ function renderOutput(passwords, detail, config) {
     elements.outputNote.textContent = `Approximate entropy: ${bits.toFixed(2)} bits (${label}). Clipboard copy works best in secure browser contexts such as GitHub Pages or localhost.`;
   } else {
     elements.outputNote.textContent = "Clipboard copy works best in secure browser contexts such as GitHub Pages or localhost.";
+  }
+
+  if (passwords.length > 1) {
+    elements.outputBanner.textContent = `${passwords.length} passwords generated. The first is shown first and the full batch is ready to copy or download.`;
   }
 }
 
@@ -507,6 +561,14 @@ elements.presetSelect.addEventListener("change", (event) => {
   setStatus(`Preset changed to ${event.target.selectedOptions[0].textContent}.`, "success");
 });
 
+for (const button of elements.typeButtons) {
+  button.addEventListener("click", () => {
+    applyPreset(button.dataset.type);
+    updatePolicyPreview();
+    generatePasswords();
+  });
+}
+
 for (const field of [
   elements.lengthInput,
   elements.countInput,
@@ -523,8 +585,13 @@ for (const field of [
   field.addEventListener("change", updatePolicyPreview);
 }
 
+elements.lengthInput.addEventListener("input", () => {
+  elements.lengthValue.textContent = elements.lengthInput.value;
+});
+
 window.addEventListener("pagehide", clearSensitiveState);
 
+applyPreset("default");
 updatePolicyPreview();
 
 if (!cryptoAvailable()) {
