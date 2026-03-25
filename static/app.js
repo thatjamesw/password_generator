@@ -2,10 +2,32 @@ const UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const LOWER = "abcdefghijklmnopqrstuvwxyz";
 const DIGITS = "0123456789";
 const SYMBOLS = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
+const MEMORABLE_ADJECTIVES = [
+  "amber", "ancient", "apple", "arrow", "autumn", "azure", "bamboo", "better",
+  "binary", "black", "blue", "bold", "brass", "brave", "bright", "bronze",
+  "calm", "cedar", "cinder", "citrus", "clear", "clever", "cloud", "cobalt",
+  "cool", "copper", "coral", "crisp", "daily", "daring", "delta", "direct",
+  "distant", "drift", "early", "eager", "ember", "even", "fable", "fair",
+  "fast", "field", "final", "forest", "fresh", "frost", "gentle", "glad",
+  "gold", "grand", "green", "harbor", "hidden", "honey", "humble", "icy",
+  "jade", "juniper", "keen", "kind", "lively", "lucky", "maple", "meadow"
+];
+const MEMORABLE_NOUNS = [
+  "anchor", "apple", "arch", "badge", "bank", "bay", "bear", "bird",
+  "bloom", "boat", "brook", "cabin", "canyon", "cloud", "coast", "comet",
+  "creek", "dawn", "delta", "dream", "dune", "echo", "falcon", "field",
+  "fire", "flower", "forest", "garden", "gate", "glade", "harbor", "hawk",
+  "hill", "horizon", "island", "lake", "leaf", "meadow", "mesa", "moon",
+  "morning", "mountain", "oak", "ocean", "path", "peak", "pine", "planet",
+  "pond", "rain", "reef", "river", "shadow", "shore", "sky", "spring",
+  "stone", "storm", "summit", "sun", "thunder", "trail", "valley", "wave"
+];
+const MEMORABLE_SEPARATOR = "-";
 const DEFAULT_LENGTH = 32;
 const DEFAULT_COUNT = 1;
-const MAX_LENGTH = 4096;
-const MAX_COUNT = 200;
+const MIN_LENGTH = 4;
+const MAX_LENGTH = 64;
+const MAX_COUNT = 100;
 
 const SIMILAR = new Set("Il1O0B8G6S5Z2".split(""));
 const AMBIGUOUS_SYMBOLS = new Set("{}[]()/\\'\"`~,;:.<>".split(""));
@@ -42,8 +64,6 @@ const elements = {
   coverageBadge: document.querySelector("#coverage-badge"),
   rulesDescription: document.querySelector("#rules-description"),
   rulesPreview: document.querySelector("#rules-preview"),
-  outputBanner: document.querySelector("#output-banner"),
-  outputStatus: document.querySelector("#output-status"),
   outputNote: document.querySelector("#output-note"),
   output: document.querySelector("#output"),
   typeButtons: [...document.querySelectorAll(".type-pill")],
@@ -64,9 +84,18 @@ function setStatus(message, kind = "") {
   elements.status.className = `status${kind ? ` ${kind}` : ""}`;
 }
 
-function setOutputStatus(message, kind = "") {
-  elements.outputStatus.textContent = message;
-  elements.outputStatus.className = `status${kind ? ` ${kind}` : ""}`;
+function currentPresetMode() {
+  return elements.presetSelect.value === "default" ? "random" : elements.presetSelect.value;
+}
+
+function resultLabelForMode(mode, count) {
+  if (mode === "memorable") {
+    return count === 1 ? "passphrase" : "passphrases";
+  }
+  if (mode === "pin") {
+    return count === 1 ? "PIN" : "PINs";
+  }
+  return count === 1 ? "password" : "passwords";
 }
 
 function setToggleAvailability(element, enabled) {
@@ -196,6 +225,28 @@ function chooseOne(pool) {
   return pool[randomIndex(pool.length)];
 }
 
+function estimateMemorableEntropyBits(pairCount) {
+  const adjectiveBits = Math.log2(MEMORABLE_ADJECTIVES.length);
+  const nounBits = Math.log2(MEMORABLE_NOUNS.length);
+  return pairCount * (adjectiveBits + nounBits);
+}
+
+function getMemorablePairCount(length) {
+  return clamp(Math.round(length / 9), 2, 6);
+}
+
+function generateMemorablePassword(length) {
+  const pairCount = getMemorablePairCount(length);
+  const words = [];
+
+  for (let index = 0; index < pairCount; index += 1) {
+    words.push(chooseOne(MEMORABLE_ADJECTIVES));
+    words.push(chooseOne(MEMORABLE_NOUNS));
+  }
+
+  return words.join(MEMORABLE_SEPARATOR);
+}
+
 function shuffle(items) {
   const copy = [...items];
   for (let index = copy.length - 1; index > 0; index -= 1) {
@@ -290,12 +341,12 @@ function applyPreset(preset) {
   }
 
   if (preset === "memorable") {
-    elements.lengthInput.value = "20";
+    elements.lengthInput.value = "36";
     elements.countInput.value = "1";
     elements.customCharset.value = "";
-    elements.uppercaseToggle.checked = true;
+    elements.uppercaseToggle.checked = false;
     elements.lowercaseToggle.checked = true;
-    elements.numbersToggle.checked = true;
+    elements.numbersToggle.checked = false;
     elements.symbolsToggle.checked = false;
     elements.excludeSimilarToggle.checked = true;
     elements.weightedOnlyToggle.checked = false;
@@ -346,21 +397,21 @@ function syncQuickMode(preset) {
   const pin = quickType === "pin";
   const hex = quickType === "hex";
 
-  setToggleAvailability(elements.uppercaseToggle, !pin && !hex);
-  setToggleAvailability(elements.lowercaseToggle, !pin && !hex);
-  setToggleAvailability(elements.numbersToggle, !hex);
+  setToggleAvailability(elements.uppercaseToggle, !memorable && !pin && !hex);
+  setToggleAvailability(elements.lowercaseToggle, !memorable && !pin && !hex);
+  setToggleAvailability(elements.numbersToggle, !memorable && !hex);
   setToggleAvailability(elements.symbolsToggle, randomLike);
 
-  elements.numbersCard.classList.toggle("highlighted", randomLike || memorable || pin);
+  elements.numbersCard.classList.toggle("highlighted", randomLike || pin);
   elements.symbolsCard.classList.toggle("highlighted", randomLike);
-  elements.uppercaseCard.classList.toggle("highlighted", randomLike || memorable);
-  elements.lowercaseCard.classList.toggle("highlighted", randomLike || memorable || hex);
+  elements.uppercaseCard.classList.toggle("highlighted", randomLike);
+  elements.lowercaseCard.classList.toggle("highlighted", randomLike || hex);
 }
 
 function getConfig() {
   const length = clamp(
     parsePositiveInteger(elements.lengthInput.value, DEFAULT_LENGTH),
-    1,
+    MIN_LENGTH,
     MAX_LENGTH
   );
   const count = clamp(
@@ -389,12 +440,38 @@ function getConfig() {
 function updatePolicyPreview() {
   try {
     const config = getConfig();
+    const displayMode = currentPresetMode();
+    const memorableMode = displayMode === "memorable" && !config.customCharset;
+
+    if (memorableMode) {
+      const pairCount = getMemorablePairCount(config.length);
+      const entropyBits = estimateMemorableEntropyBits(pairCount);
+      const preview = `${MEMORABLE_ADJECTIVES.slice(0, 6).join(", ")} ... ${MEMORABLE_NOUNS.slice(0, 6).join(", ")}`;
+
+      elements.metricPoolSize.textContent = String(MEMORABLE_ADJECTIVES.length + MEMORABLE_NOUNS.length);
+      elements.metricRequired.textContent = String(pairCount * 2);
+      elements.metricCount.textContent = String(currentPasswords.length);
+      elements.metricEntropy.textContent = config.showEntropy ? entropyBits.toFixed(2) : "off";
+      elements.metricStrength.textContent = config.showEntropy ? entropyLabel(entropyBits) : "hidden";
+      elements.metricMode.textContent = displayMode;
+      elements.poolModeBadge.textContent = "Word pairs";
+      elements.poolDescription.textContent = "Memorable mode uses random adjective-noun pairs separated by hyphens.";
+      elements.poolPreview.textContent = preview;
+      elements.coverageBadge.textContent = "Passphrase";
+      elements.rulesDescription.textContent = "Words are chosen with secure randomness, then joined with hyphens.";
+      elements.rulesPreview.textContent = `${pairCount} adjective-noun pairs will be combined into one passphrase.`;
+      elements.policySummary.textContent = `${pairCount * 2} words, hyphen-separated memorable passphrase, generated locally.`;
+      elements.policyBanner.textContent = "Memorable mode generates a word-based passphrase instead of a random character string.";
+      elements.policyBanner.className = "risk-banner safe";
+      elements.lengthValue.textContent = String(config.length);
+      return;
+    }
+
     const detail = buildPools(config);
     const uniquePool = uniqueChars(detail.allChars.join(""));
     const entropyBits = estimateEntropyBits(config.length, detail.allChars);
     const summaryLabels = detail.activeLabels.join(", ").toLowerCase();
     const coverageActive = detail.mode === "classes";
-    const displayMode = elements.presetSelect.value === "default" ? "random" : elements.presetSelect.value;
 
     elements.metricPoolSize.textContent = String(uniquePool.length);
     elements.metricRequired.textContent = String(detail.pools.length);
@@ -443,25 +520,20 @@ function updatePolicyPreview() {
 function renderOutput(passwords, detail, config) {
   const outputText = passwords.join("\n");
   elements.output.textContent = outputText;
+  elements.output.classList.toggle("output-batch", passwords.length > 1);
   elements.copyButton.disabled = passwords.length === 0;
   elements.downloadButton.disabled = passwords.length === 0;
   elements.metricCount.textContent = String(passwords.length);
-  elements.outputBanner.textContent =
-    passwords.length === 1
-      ? "One password generated and ready to copy."
-      : `${passwords.length} passwords generated and ready to copy or download.`;
-  elements.outputBanner.className = "risk-banner safe";
 
   if (config.showEntropy) {
-    const bits = estimateEntropyBits(config.length, detail.allChars);
+    const bits =
+      detail.mode === "memorable"
+        ? detail.entropyBits
+        : estimateEntropyBits(config.length, detail.allChars);
     const label = entropyLabel(bits);
     elements.outputNote.textContent = `Approximate entropy: ${bits.toFixed(2)} bits (${label}). Clipboard copy works best in secure browser contexts such as GitHub Pages or localhost.`;
   } else {
     elements.outputNote.textContent = "Clipboard copy works best in secure browser contexts such as GitHub Pages or localhost.";
-  }
-
-  if (passwords.length > 1) {
-    elements.outputBanner.textContent = `${passwords.length} passwords generated. The first is shown first and the full batch is ready to copy or download.`;
   }
 }
 
@@ -477,24 +549,42 @@ function generatePasswords() {
       throw new Error("Weighted custom mode requires a custom character set.");
     }
 
-    const detail = buildPools(config);
-    currentPasswords = Array.from({ length: config.count }, () =>
-      generatePassword(config.length, detail.pools)
-    );
+    const mode = currentPresetMode();
+    const memorableMode = mode === "memorable" && !config.customCharset;
+    let detail;
+
+    if (memorableMode) {
+      const pairCount = getMemorablePairCount(config.length);
+      detail = {
+        mode: "memorable",
+        pools: [],
+        allChars: [],
+        activeLabels: ["Memorable passphrase"],
+        entropyBits: estimateMemorableEntropyBits(pairCount),
+      };
+      currentPasswords = Array.from({ length: config.count }, () =>
+        generateMemorablePassword(config.length)
+      );
+    } else {
+      detail = buildPools(config);
+      currentPasswords = Array.from({ length: config.count }, () =>
+        generatePassword(config.length, detail.pools)
+      );
+    }
 
     renderOutput(currentPasswords, detail, config);
-    setStatus(`Generated ${config.count} password${config.count === 1 ? "" : "s"} locally.`, "success");
-    setOutputStatus("Generation complete.", "success");
+    const label = resultLabelForMode(mode, config.count);
+    setStatus(
+      `Generated ${config.count} ${label} locally. Ready to copy${config.count === 1 ? "." : " or download."}`,
+      "success"
+    );
     updatePolicyPreview();
   } catch (error) {
     currentPasswords = [];
     elements.output.textContent = "No output yet.";
     elements.copyButton.disabled = true;
     elements.downloadButton.disabled = true;
-    elements.outputBanner.textContent = error.message;
-    elements.outputBanner.className = "risk-banner warn";
     setStatus(error.message, "error");
-    setOutputStatus("Generation failed.", "error");
     updatePolicyPreview();
   }
 }
@@ -505,7 +595,7 @@ async function copyOutput() {
   }
 
   if (!window.isSecureContext || !navigator.clipboard?.writeText) {
-    setOutputStatus("Clipboard copy requires a secure browser context. You can still copy from the output panel.", "warn");
+    setStatus("Clipboard copy requires a secure browser context. You can still copy from the output panel.", "warn");
     return;
   }
 
@@ -513,9 +603,9 @@ async function copyOutput() {
 
   try {
     await navigator.clipboard.writeText(outputText);
-    setOutputStatus("Copied output to the clipboard.", "success");
+    setStatus("Copied output to the clipboard.", "success");
   } catch (error) {
-    setOutputStatus("Clipboard copy was blocked by the browser. You can still copy from the output panel.", "warn");
+    setStatus("Clipboard copy was blocked by the browser. You can still copy from the output panel.", "warn");
   }
 }
 
@@ -531,24 +621,24 @@ function downloadOutput() {
   link.download = "passwords.txt";
   link.click();
   URL.revokeObjectURL(url);
-  setOutputStatus("Downloaded passwords.txt.", "success");
+  setStatus("Downloaded passwords.txt.", "success");
 }
 
 function clearOutput() {
   currentPasswords = [];
   elements.output.textContent = "No output yet.";
+  elements.output.classList.remove("output-batch");
   elements.copyButton.disabled = true;
   elements.downloadButton.disabled = true;
-  elements.outputBanner.textContent = "Generate passwords to populate this panel.";
-  elements.outputBanner.className = "risk-banner";
   setStatus("Output cleared.", "success");
-  setOutputStatus("", "");
   updatePolicyPreview();
 }
 
 function clearSensitiveState() {
   currentPasswords = [];
   elements.output.textContent = "Output cleared.";
+  elements.output.classList.remove("output-batch");
+  elements.status.textContent = "";
 }
 
 elements.generateButton.addEventListener("click", generatePasswords);

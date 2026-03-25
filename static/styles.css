@@ -439,6 +439,10 @@ button:disabled{opacity:.45;cursor:not-allowed;transform:none}
   line-height:1.35;
   padding:18px;
 }
+.output-batch{
+  font-size:13px;
+  line-height:1.5;
+}
 .output-panel{
   border-color:rgba(0,0,0,.12);
   box-shadow:0 28px 70px rgba(0, 0, 0, 0.08);

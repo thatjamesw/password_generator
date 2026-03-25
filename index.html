@@ -44,7 +44,7 @@
           <div class="result-top">
             <div>
               <p class="result-label">Generated password</p>
-              <div id="output-banner" class="inline-note">Generate a password to populate this panel.</div>
+              <div class="inline-note">Refresh to generate locally, then copy the result.</div>
             </div>
             <div class="button-row button-row-tight">
               <button id="generate-button" class="primary">Refresh password</button>
@@ -63,8 +63,7 @@
               <button id="clear-button" class="ghost danger">Clear</button>
             </div>
           </div>
-          <div id="status" class="status">Ready.</div>
-          <div id="output-status" class="status"></div>
+          <div id="status" class="status" aria-live="polite">Ready.</div>
           <div id="policy-summary" class="inline-note">32 characters, random password, generated locally.</div>
           <div id="output-note" class="inline-note">Clipboard copy works best in secure browser contexts such as GitHub Pages or localhost.</div>
         </section>
@@ -110,7 +109,7 @@
             <div class="control-grid">
               <div class="stack">
                 <label class="label" for="count-input">Count</label>
-                <input id="count-input" type="number" min="1" step="1" value="1" />
+                <input id="count-input" type="number" min="1" max="100" step="1" value="1" inputmode="numeric" />
               </div>
               <div class="stack">
                 <label class="label" for="strength-select">Preset</label>
@@ -124,7 +123,7 @@
               </div>
               <div class="stack control-span-2">
                 <label class="label" for="custom-charset">Custom Characters</label>
-                <input id="custom-charset" type="text" spellcheck="false" autocomplete="off" placeholder="Optional: abcdef012345" />
+                <input id="custom-charset" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" placeholder="Optional: abcdef012345" />
               </div>
             </div>
 
