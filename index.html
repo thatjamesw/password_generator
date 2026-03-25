@@ -14,168 +14,159 @@
     <section class="hero">
       <div class="hero-copy">
         <p class="eyebrow">Local-first credential tooling</p>
-        <h1>Generate strong passwords in a static GitHub Pages app.</h1>
-        <p class="lede">Everything happens in your browser with Web Crypto. No backend, no analytics, and nothing leaves the page unless you copy or download it yourself.</p>
+        <h1>Generate strong passwords fast.</h1>
+        <p class="lede">Pick a length, click generate, copy the result, and move on. Advanced controls are there when you want them, but they stay out of the way by default.</p>
       </div>
       <div class="hero-chips">
         <span class="chip">Static app</span>
         <span class="chip">GitHub Pages ready</span>
         <span class="chip">Web Crypto powered</span>
-        <span class="chip">Copy or download</span>
+        <span class="chip">No backend</span>
       </div>
-    </section>
-
-    <section class="workflow-strip">
-      <article class="workflow-step">
-        <span class="workflow-kicker">Step 1</span>
-        <strong>Choose your policy</strong>
-        <p>Set length, character classes, or a custom character set.</p>
-      </article>
-      <article class="workflow-step">
-        <span class="workflow-kicker">Step 2</span>
-        <strong>Generate in-browser</strong>
-        <p>Passwords are built with cryptographically secure randomness.</p>
-      </article>
-      <article class="workflow-step">
-        <span class="workflow-kicker">Step 3</span>
-        <strong>Copy or export</strong>
-        <p>Grab one password, a batch, or a downloadable text file.</p>
-      </article>
     </section>
 
     <section class="panel primary-flow">
       <div class="panel-head">
         <div>
-          <h2>Step 1 · Configure</h2>
-          <p>The default path is designed to be safe: 32 characters, all major character classes, and no server round-trip.</p>
+          <h2>Quick Mode</h2>
+          <p>The default path is intentionally simple: set the basics, generate locally, copy the password, done.</p>
         </div>
       </div>
       <div class="panel-body">
-        <div class="control-grid">
-          <div class="stack">
-            <label class="label" for="length-input">Password Length</label>
-            <input id="length-input" type="number" min="1" step="1" value="32" />
-          </div>
-          <div class="stack">
-            <label class="label" for="count-input">How Many</label>
-            <input id="count-input" type="number" min="1" step="1" value="1" />
-          </div>
-          <div class="stack">
-            <label class="label" for="strength-select">Preset</label>
-            <select id="strength-select">
-              <option value="default">Balanced default</option>
-              <option value="secure">Secure 32+</option>
-              <option value="memorable">Memorable-ish</option>
-              <option value="pin">PIN / numeric</option>
-              <option value="hex">Hex token</option>
-            </select>
-          </div>
-          <div class="stack">
-            <label class="label" for="custom-charset">Custom Characters</label>
-            <input id="custom-charset" type="text" spellcheck="false" autocomplete="off" placeholder="Optional: abcdef012345" />
-          </div>
-        </div>
+        <div class="quick-layout">
+          <section class="quick-config">
+            <div class="control-grid">
+              <div class="stack">
+                <label class="label" for="length-input">Password Length</label>
+                <input id="length-input" type="number" min="1" step="1" value="32" />
+              </div>
+              <div class="stack">
+                <label class="label" for="count-input">How Many</label>
+                <input id="count-input" type="number" min="1" step="1" value="1" />
+              </div>
+              <div class="stack">
+                <label class="label" for="strength-select">Preset</label>
+                <select id="strength-select">
+                  <option value="default">Balanced default</option>
+                  <option value="secure">Secure 32+</option>
+                  <option value="memorable">Memorable-ish</option>
+                  <option value="pin">PIN / numeric</option>
+                  <option value="hex">Hex token</option>
+                </select>
+              </div>
+              <div class="stack">
+                <label class="label" for="custom-charset">Custom Characters</label>
+                <input id="custom-charset" type="text" spellcheck="false" autocomplete="off" placeholder="Optional: abcdef012345" />
+              </div>
+            </div>
 
-        <div class="scan-config">
-          <section class="config-card">
-            <div class="config-head">
-              <h3>Character Classes</h3>
-              <p>If none are selected and no custom set is provided, the generator uses uppercase, lowercase, numbers, and symbols.</p>
-            </div>
-            <div class="scope-list">
-              <label class="scope-pill"><input id="uppercase-toggle" type="checkbox" checked /><span>Uppercase</span><small>A-Z</small></label>
-              <label class="scope-pill"><input id="lowercase-toggle" type="checkbox" checked /><span>Lowercase</span><small>a-z</small></label>
-              <label class="scope-pill"><input id="numbers-toggle" type="checkbox" checked /><span>Numbers</span><small>0-9</small></label>
-              <label class="scope-pill"><input id="symbols-toggle" type="checkbox" checked /><span>Symbols</span><small>Punctuation</small></label>
-            </div>
+            <section class="config-card">
+              <div class="config-head">
+                <h3>Character Classes</h3>
+                <p>If you leave these alone, the generator uses all major classes by default.</p>
+              </div>
+              <div class="scope-list">
+                <label class="scope-pill"><input id="uppercase-toggle" type="checkbox" checked /><span>Uppercase</span><small>A-Z</small></label>
+                <label class="scope-pill"><input id="lowercase-toggle" type="checkbox" checked /><span>Lowercase</span><small>a-z</small></label>
+                <label class="scope-pill"><input id="numbers-toggle" type="checkbox" checked /><span>Numbers</span><small>0-9</small></label>
+                <label class="scope-pill"><input id="symbols-toggle" type="checkbox" checked /><span>Symbols</span><small>Punctuation</small></label>
+              </div>
+            </section>
+
+            <div class="inline-note">Security model: no network calls, no storage, and randomness comes from <code>crypto.getRandomValues</code>.</div>
           </section>
 
-          <section class="config-card">
-            <div class="config-head">
-              <h3>Generation Rules</h3>
-              <p>These mirror the safer CLI defaults from the original project.</p>
+          <section class="panel output-panel output-panel-inline">
+            <div class="panel-head">
+              <div>
+                <h2>Output</h2>
+                <p>Keep the result right next to the controls so generating and grabbing a password feels immediate.</p>
+              </div>
             </div>
-            <div class="scope-list">
-              <label class="scope-pill"><input id="exclude-similar-toggle" type="checkbox" /><span>Exclude similar</span><small>Drop lookalikes like O/0 and l/1, plus ambiguous symbols.</small></label>
-              <label class="scope-pill"><input id="weighted-only-toggle" type="checkbox" /><span>Weighted custom set</span><small>Keep duplicate characters in the custom set to bias selection.</small></label>
-              <label class="scope-pill"><input id="entropy-toggle" type="checkbox" checked /><span>Show entropy estimate</span><small>Display approximate bits and strength label for the current policy.</small></label>
+            <div class="panel-body">
+              <div class="button-row">
+                <button id="generate-button" class="primary">Generate passwords</button>
+                <button id="copy-button" class="secondary" disabled>Copy output</button>
+                <button id="download-button" class="ghost" disabled>Download .txt</button>
+                <button id="clear-button" class="ghost danger">Clear output</button>
+              </div>
+
+              <div class="trust-banner">
+                <strong>Generated entirely on this device.</strong>
+                <span>The page never sends generated passwords over the network.</span>
+              </div>
+              <div id="output-banner" class="risk-banner">Generate passwords to populate this panel.</div>
+              <div id="status" class="status">Ready.</div>
+              <div id="output-status" class="status"></div>
+              <div id="policy-summary" class="inline-note">32 characters, 1 password, all classes, local-only generation.</div>
+              <div id="output-note" class="inline-note">Clipboard copy works best in secure browser contexts such as GitHub Pages or localhost.</div>
+              <pre id="output" class="output output-compact">No output yet.</pre>
             </div>
-            <div class="helper-note">Custom character mode overrides the class toggles. Duplicate characters are deduplicated unless weighted mode is enabled.</div>
           </section>
         </div>
 
-        <div class="button-row">
-          <button id="generate-button" class="primary">Generate passwords</button>
-          <button id="copy-button" class="secondary" disabled>Copy output</button>
-          <button id="download-button" class="ghost" disabled>Download .txt</button>
-          <button id="clear-button" class="ghost danger">Clear output</button>
-        </div>
+        <details class="advanced-panel">
+          <summary class="advanced-summary">
+            <div>
+              <strong>Advanced Mode</strong>
+              <span>Policy review, entropy, and custom generation rules.</span>
+            </div>
+            <span class="summary-button">Show advanced options</span>
+          </summary>
+          <div class="advanced-body">
+            <div class="scan-config">
+              <section class="config-card">
+                <div class="config-head">
+                  <h3>Generation Rules</h3>
+                  <p>These keep the original safer CLI defaults available when you need them.</p>
+                </div>
+                <div class="scope-list">
+                  <label class="scope-pill"><input id="exclude-similar-toggle" type="checkbox" /><span>Exclude similar</span><small>Drop lookalikes like O/0 and l/1, plus ambiguous symbols.</small></label>
+                  <label class="scope-pill"><input id="weighted-only-toggle" type="checkbox" /><span>Weighted custom set</span><small>Keep duplicate characters in the custom set to bias selection.</small></label>
+                  <label class="scope-pill"><input id="entropy-toggle" type="checkbox" checked /><span>Show entropy estimate</span><small>Display approximate bits and strength label for the current policy.</small></label>
+                </div>
+                <div class="helper-note">Custom character mode overrides the class toggles. Duplicate characters are deduplicated unless weighted mode is enabled.</div>
+              </section>
 
-        <div id="status" class="status">Ready.</div>
-        <div id="policy-summary" class="inline-note">32 characters, 1 password, all classes, local-only generation.</div>
-        <div class="inline-note">Security model: no network calls, no storage, and randomness comes from <code>crypto.getRandomValues</code>.</div>
+              <section class="config-card">
+                <div class="config-head">
+                  <h3>Policy Review</h3>
+                  <p>See exactly what character pool is active and whether class coverage is being enforced.</p>
+                </div>
+                <div class="summary">
+                  <div class="metric"><strong id="metric-pool-size">0</strong><span>Unique chars</span></div>
+                  <div class="metric"><strong id="metric-required">0</strong><span>Required groups</span></div>
+                  <div class="metric"><strong id="metric-count">0</strong><span>Generated</span></div>
+                </div>
+                <div class="summary summary-trust">
+                  <div class="metric"><strong id="metric-entropy">0</strong><span>Estimated bits</span></div>
+                  <div class="metric"><strong id="metric-strength">n/a</strong><span>Strength</span></div>
+                  <div class="metric"><strong id="metric-mode">classes</strong><span>Mode</span></div>
+                </div>
+                <div id="policy-banner" class="risk-banner">No passwords generated yet. Review the policy, then generate output.</div>
+                <div class="findings">
+                  <article class="finding">
+                    <div class="finding-top">
+                      <span class="badge trust">Pool</span>
+                      <span class="badge pii" id="pool-mode-badge">Class-based</span>
+                    </div>
+                    <div class="meta" id="pool-description">Using uppercase, lowercase, numbers, and symbols.</div>
+                    <code id="pool-preview">ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"#$%&amp;'()*+,-./:;&lt;=&gt;?@[\]^_`{|}~</code>
+                  </article>
+                  <article class="finding">
+                    <div class="finding-top">
+                      <span class="badge trust">Rules</span>
+                      <span class="badge medium" id="coverage-badge">Coverage on</span>
+                    </div>
+                    <div class="meta" id="rules-description">At least one character from each active class is guaranteed.</div>
+                    <code id="rules-preview">Uppercase, lowercase, numbers, and symbols will each appear at least once.</code>
+                  </article>
+                </div>
+              </section>
+            </div>
+          </div>
+        </details>
       </div>
-    </section>
-
-    <section class="grid">
-      <section class="panel review-panel">
-        <div class="panel-head">
-          <div>
-            <h2>Step 2 · Policy Review</h2>
-            <p>See exactly what character pool is active, how large it is, and whether class coverage is being enforced.</p>
-          </div>
-        </div>
-        <div class="panel-body">
-          <div class="summary">
-            <div class="metric"><strong id="metric-pool-size">0</strong><span>Unique chars</span></div>
-            <div class="metric"><strong id="metric-required">0</strong><span>Required groups</span></div>
-            <div class="metric"><strong id="metric-count">0</strong><span>Generated</span></div>
-          </div>
-          <div class="summary summary-trust">
-            <div class="metric"><strong id="metric-entropy">0</strong><span>Estimated bits</span></div>
-            <div class="metric"><strong id="metric-strength">n/a</strong><span>Strength</span></div>
-            <div class="metric"><strong id="metric-mode">classes</strong><span>Mode</span></div>
-          </div>
-          <div id="policy-banner" class="risk-banner">No passwords generated yet. Review the policy, then generate output.</div>
-          <div class="findings">
-            <article class="finding">
-              <div class="finding-top">
-                <span class="badge trust">Pool</span>
-                <span class="badge pii" id="pool-mode-badge">Class-based</span>
-              </div>
-              <div class="meta" id="pool-description">Using uppercase, lowercase, numbers, and symbols.</div>
-              <code id="pool-preview">ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"#$%&amp;'()*+,-./:;&lt;=&gt;?@[\]^_`{|}~</code>
-            </article>
-            <article class="finding">
-              <div class="finding-top">
-                <span class="badge trust">Rules</span>
-                <span class="badge medium" id="coverage-badge">Coverage on</span>
-              </div>
-              <div class="meta" id="rules-description">At least one character from each active class is guaranteed.</div>
-              <code id="rules-preview">Uppercase, lowercase, numbers, and symbols will each appear at least once.</code>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section class="panel output-panel">
-        <div class="panel-head">
-          <div>
-            <h2>Step 3 · Output</h2>
-            <p>Copy a single password or generate a batch for account provisioning, secret rotation, or local testing.</p>
-          </div>
-        </div>
-        <div class="panel-body">
-          <div class="trust-banner">
-            <strong>Generated entirely on this device.</strong>
-            <span>The page never sends generated passwords over the network.</span>
-          </div>
-          <div id="output-banner" class="risk-banner">Generate passwords to populate this panel.</div>
-          <div id="output-status" class="status"></div>
-          <div id="output-note" class="inline-note">Clipboard copy works best in secure browser contexts such as GitHub Pages or localhost.</div>
-          <pre id="output" class="output">No output yet.</pre>
-        </div>
-      </section>
     </section>
   </main>
 

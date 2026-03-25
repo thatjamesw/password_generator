@@ -131,6 +131,16 @@ body{
   grid-template-columns:minmax(320px, .82fr) minmax(460px, 1.18fr);
   gap:18px;
 }
+.quick-layout{
+  display:grid;
+  grid-template-columns:minmax(320px, .95fr) minmax(320px, 1.05fr);
+  gap:18px;
+  align-items:start;
+}
+.quick-config{
+  display:grid;
+  gap:14px;
+}
 .primary-flow .panel-body{gap:18px}
 .scan-config{
   display:grid;
@@ -321,15 +331,77 @@ button:disabled{opacity:.45;cursor:not-allowed;transform:none}
   overflow:auto;
   margin:0;
 }
+.output-compact{
+  min-height:260px;
+}
 .output-panel{
   border-color:rgba(0,0,0,.12);
   box-shadow:0 28px 70px rgba(0, 0, 0, 0.08);
+}
+.output-panel-inline{
+  border-radius:24px;
+}
+.advanced-panel{
+  border:1px solid var(--border);
+  border-radius:24px;
+  background:rgba(255,255,255,.62);
+  overflow:hidden;
+}
+.advanced-panel summary{
+  list-style:none;
+}
+.advanced-panel summary::-webkit-details-marker{
+  display:none;
+}
+.advanced-summary{
+  padding:20px 22px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+}
+.advanced-summary strong{
+  display:block;
+  font-size:1rem;
+}
+.advanced-summary span{
+  color:var(--muted);
+  font-size:.92rem;
+}
+.advanced-panel[open] .advanced-summary{
+  border-bottom:1px solid rgba(84,94,117,.12);
+}
+.summary-button{
+  display:inline-flex;
+  align-items:center;
+  white-space:nowrap;
+  padding:10px 14px;
+  border:1px solid var(--border);
+  border-radius:999px;
+  background:rgba(255,255,255,.74);
+  color:var(--ink);
+}
+.summary-button::after{
+  content:"›";
+  margin-left:8px;
+  font-size:16px;
+  transition:transform .18s ease;
+}
+.advanced-panel[open] .summary-button::after{
+  transform:rotate(90deg);
+}
+.advanced-body{
+  padding:18px 22px 22px;
+  display:grid;
+  gap:16px;
 }
 code{
   font-family:"SFMono-Regular",Consolas,monospace;
 }
 @media (max-width: 960px){
   .workflow-strip{grid-template-columns:1fr}
+  .quick-layout{grid-template-columns:1fr}
   .scan-config{grid-template-columns:1fr}
   .grid{grid-template-columns:1fr}
   .output{min-height:340px}
