@@ -19,8 +19,12 @@ Examples:
 from __future__ import annotations
 
 import argparse
+from collections import Counter
+import math
 import secrets
 import string
+import subprocess
+import sys
 from typing import List
 
 # Characters often considered "confusing" or ambiguous in certain fonts/contexts
@@ -47,6 +51,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="How many passwords to generate."
     )
     p.add_argument(
+        "positional_length",
+        nargs="?",
+        type=int,
+        help="Optional positional password length shortcut."
+    )
+    p.add_argument(
         "--secure",
         action="store_true",
         help="Secure preset: length>=32 and all classes enabled. You may still override --length."
@@ -60,31 +70,50 @@ def build_parser() -> argparse.ArgumentParser:
 
     # Refinements
     p.add_argument(
-        "--exclude-similar",
+        "-x", "--exclude-similar",
         action="store_true",
         help="Exclude easily confused characters (e.g., O/0, l/1, S/5) and certain ambiguous symbols."
     )
     p.add_argument(
-        "--only",
+        "-o", "--only",
         type=str,
         default="",
-        help="Optional explicit character set override (uses only these chars). Bypasses class flags."
+        help="Optional explicit character set override. Duplicates are removed unless --weighted-only is used."
+    )
+    p.add_argument(
+        "-W", "--weighted-only",
+        action="store_true",
+        help="Preserve duplicate characters in --only so repeated chars act as weighting."
+    )
+    p.add_argument(
+        "-E", "--entropy",
+        action="store_true",
+        help="Append an estimated entropy value in bits to each generated password."
+    )
+    p.add_argument(
+        "-C", "--copy",
+        action="store_true",
+        help="Copy the generated password to the clipboard instead of printing it. Requires --count 1."
     )
 
     return p
 
-def filtered_charset(chars: str, exclude_similar: bool) -> List[str]:
-    s = set(chars)
-    if exclude_similar:
-        s -= SIMILAR_CHARS
-        # Also remove ambiguous symbols if they happen to appear here
-        s -= AMBIGUOUS_SYMBOLS
-    return list(sorted(s))
+def filtered_charset(chars: str, exclude_similar: bool, preserve_duplicates: bool = False) -> List[str]:
+    filtered: List[str] = []
+    seen = set()
+    for char in chars:
+        if exclude_similar and (char in SIMILAR_CHARS or char in AMBIGUOUS_SYMBOLS):
+            continue
+        if not preserve_duplicates and char in seen:
+            continue
+        filtered.append(char)
+        seen.add(char)
+    return filtered
 
 def get_class_pools(args: argparse.Namespace) -> List[List[str]]:
     # If --only is provided, we skip class logic entirely
     if args.only:
-        custom = filtered_charset(args.only, args.exclude_similar)
+        custom = filtered_charset(args.only, args.exclude_similar, preserve_duplicates=args.weighted_only)
         if not custom:
             raise ValueError("The provided --only charset is empty after filtering.")
         return [custom]
@@ -144,6 +173,44 @@ def generate_password(length: int, pools: List[List[str]]) -> str:
     rand.shuffle(pwd_chars)
     return "".join(pwd_chars)
 
+def estimate_entropy_bits(length: int, pools: List[List[str]]) -> float:
+    """
+    Return an approximate entropy estimate in bits.
+
+    This uses the weighted combined character pool and does not try to exactly
+    model the class-coverage constraint.
+    """
+    all_chars = [c for pool in pools for c in pool]
+    if length <= 0 or not all_chars:
+        return 0.0
+
+    counts = Counter(all_chars)
+    total = len(all_chars)
+    bits_per_char = -sum((count / total) * math.log2(count / total) for count in counts.values())
+    return length * bits_per_char
+
+def copy_to_clipboard(text: str) -> None:
+    clipboard_commands = [
+        ["pbcopy"],
+        ["xclip", "-selection", "clipboard"],
+        ["xsel", "--clipboard", "--input"],
+        ["clip"],
+    ]
+
+    for command in clipboard_commands:
+        try:
+            subprocess.run(command, input=text, text=True, check=True, capture_output=True)
+            return
+        except FileNotFoundError:
+            continue
+        except subprocess.CalledProcessError as exc:
+            stderr = exc.stderr.strip() if exc.stderr else "clipboard command failed"
+            raise SystemExit(f"Error: unable to copy password to clipboard: {stderr}") from exc
+
+    raise SystemExit(
+        "Error: no supported clipboard command found. Install pbcopy, xclip, xsel, or clip."
+    )
+
 def enforce_secure_preset(args: argparse.Namespace) -> None:
     # Secure preset => ensure robust defaults
     if args.secure:
@@ -157,6 +224,9 @@ def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
 
+    if args.positional_length is not None:
+        args.length = args.positional_length
+
     # Apply secure preset (may still be overridden by explicit flags)
     enforce_secure_preset(args)
 
@@ -167,10 +237,25 @@ def main() -> None:
         raise SystemExit("Error: --length must be a positive integer.")
     if args.count <= 0:
         raise SystemExit("Error: --count must be a positive integer.")
+    if args.weighted_only and not args.only:
+        raise SystemExit("Error: --weighted-only requires --only.")
+    if args.copy and args.count != 1:
+        raise SystemExit("Error: --copy requires --count 1.")
 
     try:
+        entropy_bits = estimate_entropy_bits(args.length, pools) if args.entropy else None
         for _ in range(args.count):
-            print(generate_password(args.length, pools))
+            password = generate_password(args.length, pools)
+            if args.copy:
+                copy_to_clipboard(password)
+                if entropy_bits is None:
+                    print("Password copied to clipboard.")
+                else:
+                    print(f"Password copied to clipboard.\t(est. entropy: {entropy_bits:.2f} bits)")
+            elif entropy_bits is None:
+                print(password)
+            else:
+                print(f"{password}\t(est. entropy: {entropy_bits:.2f} bits)")
     except ValueError as e:
         raise SystemExit(f"Error: {e}")
 
