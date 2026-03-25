@@ -1,39 +1,25 @@
+import { EFF_LARGE_WORDLIST } from "./eff-wordlist.js";
+
 const UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const LOWER = "abcdefghijklmnopqrstuvwxyz";
 const DIGITS = "0123456789";
 const SYMBOLS = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
-const MEMORABLE_ADJECTIVES = [
-  "amber", "ancient", "apple", "arrow", "autumn", "azure", "bamboo", "better",
-  "binary", "black", "blue", "bold", "brass", "brave", "bright", "bronze",
-  "calm", "cedar", "cinder", "citrus", "clear", "clever", "cloud", "cobalt",
-  "cool", "copper", "coral", "crisp", "daily", "daring", "delta", "direct",
-  "distant", "drift", "early", "eager", "ember", "even", "fable", "fair",
-  "fast", "field", "final", "forest", "fresh", "frost", "gentle", "glad",
-  "gold", "grand", "green", "harbor", "hidden", "honey", "humble", "icy",
-  "jade", "juniper", "keen", "kind", "lively", "lucky", "maple", "meadow"
-];
-const MEMORABLE_NOUNS = [
-  "anchor", "apple", "arch", "badge", "bank", "bay", "bear", "bird",
-  "bloom", "boat", "brook", "cabin", "canyon", "cloud", "coast", "comet",
-  "creek", "dawn", "delta", "dream", "dune", "echo", "falcon", "field",
-  "fire", "flower", "forest", "garden", "gate", "glade", "harbor", "hawk",
-  "hill", "horizon", "island", "lake", "leaf", "meadow", "mesa", "moon",
-  "morning", "mountain", "oak", "ocean", "path", "peak", "pine", "planet",
-  "pond", "rain", "reef", "river", "shadow", "shore", "sky", "spring",
-  "stone", "storm", "summit", "sun", "thunder", "trail", "valley", "wave"
-];
 const MEMORABLE_SEPARATOR = "-";
 const DEFAULT_LENGTH = 32;
 const DEFAULT_COUNT = 1;
 const MIN_LENGTH = 4;
 const MAX_LENGTH = 64;
 const MAX_COUNT = 100;
+const PASSPHRASE_MIN_WORDS = 4;
+const PASSPHRASE_MAX_WORDS = 8;
+const PASSPHRASE_DEFAULT_WORDS = 6;
 
 const SIMILAR = new Set("Il1O0B8G6S5Z2".split(""));
 const AMBIGUOUS_SYMBOLS = new Set("{}[]()/\\'\"`~,;:.<>".split(""));
 
 const elements = {
   lengthInput: document.querySelector("#length-input"),
+  lengthLabel: document.querySelector("#length-label"),
   lengthValue: document.querySelector("#length-value"),
   countInput: document.querySelector("#count-input"),
   presetSelect: document.querySelector("#strength-select"),
@@ -226,13 +212,11 @@ function chooseOne(pool) {
 }
 
 function estimateMemorableEntropyBits(pairCount) {
-  const adjectiveBits = Math.log2(MEMORABLE_ADJECTIVES.length);
-  const nounBits = Math.log2(MEMORABLE_NOUNS.length);
-  return pairCount * (adjectiveBits + nounBits);
+  return pairCount * Math.log2(EFF_LARGE_WORDLIST.length);
 }
 
 function getMemorablePairCount(length) {
-  return clamp(Math.round(length / 9), 2, 6);
+  return clamp(length, PASSPHRASE_MIN_WORDS, PASSPHRASE_MAX_WORDS);
 }
 
 function generateMemorablePassword(length) {
@@ -240,8 +224,7 @@ function generateMemorablePassword(length) {
   const words = [];
 
   for (let index = 0; index < pairCount; index += 1) {
-    words.push(chooseOne(MEMORABLE_ADJECTIVES));
-    words.push(chooseOne(MEMORABLE_NOUNS));
+    words.push(chooseOne(EFF_LARGE_WORDLIST));
   }
 
   return words.join(MEMORABLE_SEPARATOR);
@@ -309,11 +292,20 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
+function setLengthRange(min, max, value, label) {
+  elements.lengthInput.min = String(min);
+  elements.lengthInput.max = String(max);
+  elements.lengthInput.step = "1";
+  elements.lengthInput.value = String(clamp(parsePositiveInteger(value, min), min, max));
+  elements.lengthLabel.textContent = label;
+  elements.lengthValue.textContent = elements.lengthInput.value;
+}
+
 function applyPreset(preset) {
   elements.presetSelect.value = preset;
 
   if (preset === "default") {
-    elements.lengthInput.value = "32";
+    setLengthRange(8, MAX_LENGTH, 32, "Length");
     elements.countInput.value = "1";
     elements.customCharset.value = "";
     elements.uppercaseToggle.checked = true;
@@ -327,7 +319,7 @@ function applyPreset(preset) {
   }
 
   if (preset === "secure") {
-    elements.lengthInput.value = "32";
+    setLengthRange(8, MAX_LENGTH, 32, "Length");
     elements.countInput.value = "1";
     elements.customCharset.value = "";
     elements.uppercaseToggle.checked = true;
@@ -341,7 +333,7 @@ function applyPreset(preset) {
   }
 
   if (preset === "memorable") {
-    elements.lengthInput.value = "36";
+    setLengthRange(PASSPHRASE_MIN_WORDS, PASSPHRASE_MAX_WORDS, PASSPHRASE_DEFAULT_WORDS, "Words");
     elements.countInput.value = "1";
     elements.customCharset.value = "";
     elements.uppercaseToggle.checked = false;
@@ -355,7 +347,7 @@ function applyPreset(preset) {
   }
 
   if (preset === "pin") {
-    elements.lengthInput.value = "8";
+    setLengthRange(4, 12, 8, "Length");
     elements.countInput.value = "1";
     elements.customCharset.value = "";
     elements.uppercaseToggle.checked = false;
@@ -369,7 +361,7 @@ function applyPreset(preset) {
   }
 
   if (preset === "hex") {
-    elements.lengthInput.value = "40";
+    setLengthRange(8, MAX_LENGTH, 40, "Length");
     elements.countInput.value = "1";
     elements.customCharset.value = "0123456789abcdef";
     elements.uppercaseToggle.checked = false;
@@ -397,6 +389,20 @@ function syncQuickMode(preset) {
   const pin = quickType === "pin";
   const hex = quickType === "hex";
 
+  if (memorable) {
+    elements.lengthLabel.textContent = "Words";
+    elements.lengthInput.min = String(PASSPHRASE_MIN_WORDS);
+    elements.lengthInput.max = String(PASSPHRASE_MAX_WORDS);
+  } else if (pin) {
+    elements.lengthLabel.textContent = "Length";
+    elements.lengthInput.min = "4";
+    elements.lengthInput.max = "12";
+  } else {
+    elements.lengthLabel.textContent = "Length";
+    elements.lengthInput.min = "8";
+    elements.lengthInput.max = String(MAX_LENGTH);
+  }
+
   setToggleAvailability(elements.uppercaseToggle, !memorable && !pin && !hex);
   setToggleAvailability(elements.lowercaseToggle, !memorable && !pin && !hex);
   setToggleAvailability(elements.numbersToggle, !memorable && !hex);
@@ -409,10 +415,12 @@ function syncQuickMode(preset) {
 }
 
 function getConfig() {
+  const minLength = parsePositiveInteger(elements.lengthInput.min, MIN_LENGTH);
+  const maxLength = parsePositiveInteger(elements.lengthInput.max, MAX_LENGTH);
   const length = clamp(
     parsePositiveInteger(elements.lengthInput.value, DEFAULT_LENGTH),
-    MIN_LENGTH,
-    MAX_LENGTH
+    minLength,
+    maxLength
   );
   const count = clamp(
     parsePositiveInteger(elements.countInput.value, DEFAULT_COUNT),
@@ -446,22 +454,22 @@ function updatePolicyPreview() {
     if (memorableMode) {
       const pairCount = getMemorablePairCount(config.length);
       const entropyBits = estimateMemorableEntropyBits(pairCount);
-      const preview = `${MEMORABLE_ADJECTIVES.slice(0, 6).join(", ")} ... ${MEMORABLE_NOUNS.slice(0, 6).join(", ")}`;
+      const preview = EFF_LARGE_WORDLIST.slice(0, 12).join(", ");
 
-      elements.metricPoolSize.textContent = String(MEMORABLE_ADJECTIVES.length + MEMORABLE_NOUNS.length);
-      elements.metricRequired.textContent = String(pairCount * 2);
+      elements.metricPoolSize.textContent = String(EFF_LARGE_WORDLIST.length);
+      elements.metricRequired.textContent = String(pairCount);
       elements.metricCount.textContent = String(currentPasswords.length);
       elements.metricEntropy.textContent = config.showEntropy ? entropyBits.toFixed(2) : "off";
       elements.metricStrength.textContent = config.showEntropy ? entropyLabel(entropyBits) : "hidden";
       elements.metricMode.textContent = displayMode;
-      elements.poolModeBadge.textContent = "Word pairs";
-      elements.poolDescription.textContent = "Memorable mode uses random adjective-noun pairs separated by hyphens.";
+      elements.poolModeBadge.textContent = "EFF list";
+      elements.poolDescription.textContent = "Memorable mode uses the official EFF large wordlist with secure random selection.";
       elements.poolPreview.textContent = preview;
       elements.coverageBadge.textContent = "Passphrase";
       elements.rulesDescription.textContent = "Words are chosen with secure randomness, then joined with hyphens.";
-      elements.rulesPreview.textContent = `${pairCount} adjective-noun pairs will be combined into one passphrase.`;
-      elements.policySummary.textContent = `${pairCount * 2} words, hyphen-separated memorable passphrase, generated locally.`;
-      elements.policyBanner.textContent = "Memorable mode generates a word-based passphrase instead of a random character string.";
+      elements.rulesPreview.textContent = `${pairCount} random words from the EFF list will be combined into one passphrase.`;
+      elements.policySummary.textContent = `${pairCount} words, hyphen-separated passphrase, generated locally from the EFF wordlist.`;
+      elements.policyBanner.textContent = "Passphrase mode now uses the official EFF large wordlist instead of a small toy word set.";
       elements.policyBanner.className = "risk-banner safe";
       elements.lengthValue.textContent = String(config.length);
       return;

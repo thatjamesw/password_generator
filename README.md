@@ -28,6 +28,7 @@ The original CLI tools are still present:
 - Multi-password generation
 - Clipboard copy and text download
 - Estimated entropy display
+- Passphrase mode backed by the official EFF large wordlist
 
 ## Local Preview
 
@@ -62,6 +63,7 @@ The workflow simply uploads the static repository contents and deploys them. The
 - The page is designed not to make outbound network requests.
 - A restrictive Content Security Policy is set in [`index.html`](./index.html).
 - Input size is bounded in the UI to avoid accidental oversized generation requests.
+- Passphrase mode uses a bundled local copy of the official EFF large wordlist rather than a tiny handcrafted set.
 - Clipboard copy depends on browser permissions and secure context rules.
 - Entropy is an estimate based on the active pool and should be treated as guidance, not a formal proof.
 - If you use clipboard managers, copied passwords may still persist outside the page.
