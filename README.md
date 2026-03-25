@@ -1,158 +1,171 @@
-# 🔑 Secure Password Generator (Python & Bash)
+# Secure Password Generator
 
-This repository contains two implementations of a **secure, configurable password generator**:
+This repository contains two command-line password generators:
 
-- **`password_generator.py`** – Python CLI version, recommended as the default implementation
-- **`password_generator.sh`** – Bash CLI version for portability and shell-only environments
+- `password_generator.py`: the recommended implementation for most users
+- `password_generator.sh`: a Bash version for shell-only or portability-focused workflows
 
-Both provide **cryptographically secure** password generation with flexible options for length, character classes, exclusions, and presets.
+Both versions use cryptographically secure randomness and support configurable length, character classes, custom character sets, clipboard copy, and estimated entropy output.
 
----
+## Why Two Versions
 
-## ✨ Features
+Use the Python version if you can. It is simpler to maintain, easier to extend, and the safest default choice for day-to-day use.
 
-- Cryptographically secure randomness  
-  - Python: `secrets` module  
-  - Bash: `/dev/urandom` with rejection sampling (avoids modulo bias)
+Use the Bash version when you specifically want a shell script with minimal runtime requirements beyond standard Unix tools.
 
-- Configurable **character classes**:
-  - `--uppercase` → `A–Z`
-  - `--lowercase` → `a–z`
-  - `--numbers`   → `0–9`
-  - `--symbols`   → punctuation (`!@#$%^&*...`)
+## Quick Start
 
-- **Secure preset (`--secure`)**
-  - Enforces **minimum length of 32**
-  - Enables **all classes** (unless you explicitly choose otherwise)
+Recommended:
 
-- **Exclude similar (`--exclude-similar`)**
-  - Removes easily confused characters:
-    ```
-    I l 1 O 0 B 8 G 6 S 5 Z 2
-    ```
-  - Also strips ambiguous symbols when `--symbols` is used:
-    ```
-    { } [ ] ( ) / \ ' " ` ~ , ; : . <>
-    ```
-
-- **Class coverage guarantee**  
-  Always includes at least one character from each selected class.
-
-- **Custom charset (`--only "CHARS"`)**  
-  Use exactly the characters you provide, bypassing class flags.
-  Duplicate characters are removed by default to avoid accidental weighting.
-
-- **Optional weighted charset (`--weighted-only`)**
-  - Preserves duplicate characters in `--only`
-  - Useful when you intentionally want repeated characters to change selection weighting
-
-- **Multiple passwords (`-n, --count`)**  
-  Generate more than one password at a time.
-
-- **Optional entropy estimate (`--entropy`)**
-  - Appends an approximate entropy value in bits to each generated password
-  - Useful for quickly understanding relative password strength
-
-- **Clipboard output (`--copy`)**
-  - Copies the generated password to the system clipboard instead of printing it directly
-  - Requires `--count 1`
-
----
-
-## ⚙️ Defaults
-
-- **Default run (no arguments):**  
-  Generates a **32-character password** using **all classes**.  
-
-- **Secure preset (`--secure`):**  
-  Ensures **length ≥ 32** and all classes enabled (unless `--only` is used).
-
----
-
-## 🚀 Usage
-
-### Python version
-Recommended for most use cases.
 ```bash
-# Default (32 chars, all classes)
-python password_generator.py
-
-# Secure preset (≥32 chars, all classes)
-python password_generator.py --secure
-
-# Custom length and classes
-python password_generator.py -l 24 --uppercase --lowercase --numbers
-
-# Multiple passwords
-python password_generator.py -n 5 -l 20 --symbols --exclude-similar
-
-# Custom charset only (hex)
-python password_generator.py -l 40 --only "0123456789abcdef"
-
-# Custom charset with intentional weighting
-python password_generator.py -l 40 --only "aaaabc123" --weighted-only
-
-# Show estimated entropy
-python password_generator.py --entropy
-
-# Copy to clipboard instead of printing
-python password_generator.py --copy
+python3 password_generator.py
 ```
 
-### Bash Version
+This generates a 32-character password using uppercase letters, lowercase letters, numbers, and symbols.
+
+Common shortcuts:
+
 ```bash
-# Default (32 chars, all classes)
+python3 password_generator.py 20
+python3 password_generator.py 20 -C
+python3 password_generator.py 20 -E
+python3 password_generator.py 20 -x
+python3 password_generator.py 20 -o "abcdef012345"
+python3 password_generator.py 20 -o "aaaabc123" -W
+```
+
+Equivalent Bash commands:
+
+```bash
+bash password_generator.sh 20
+bash password_generator.sh 20 -C
+bash password_generator.sh 20 -E
+```
+
+## Features
+
+- Cryptographically secure randomness
+- Default length of 32 characters
+- Automatic inclusion of all character classes when none are specified
+- Guaranteed class coverage for selected classes
+- Optional exclusion of similar or ambiguous characters
+- Custom character sets with safe deduplication by default
+- Optional weighted custom character sets
+- Clipboard copy mode
+- Estimated entropy output
+- Multi-password generation
+
+## Safer Defaults
+
+The tools aim to make the common path safe:
+
+- Default output is a 32-character password
+- If no class flags are set, all character classes are included
+- `--only` deduplicates repeated characters by default so accidental weighting does not weaken output
+- `--copy` avoids printing the password directly to the terminal
+
+If you intentionally want repeated characters in `--only` to change selection probability, use `--weighted-only`.
+
+## Python Usage
+
+```bash
+# Default 32-character password
+python3 password_generator.py
+
+# 24-character password
+python3 password_generator.py 24
+
+# Secure preset
+python3 password_generator.py --secure
+
+# Copy to clipboard instead of printing
+python3 password_generator.py -C
+
+# Show estimated entropy
+python3 password_generator.py -E
+
+# Exclude similar characters
+python3 password_generator.py 24 -x
+
+# Generate multiple passwords
+python3 password_generator.py -n 5 20
+
+# Select specific classes
+python3 password_generator.py 24 --uppercase --lowercase --numbers
+
+# Custom character set
+python3 password_generator.py 40 -o "0123456789abcdef"
+
+# Weighted custom character set
+python3 password_generator.py 40 -o "aaaabc123" -W
+```
+
+## Bash Usage
+
+```bash
+# Default 32-character password
 bash password_generator.sh
 
-# Secure preset (≥32 chars, all classes)
+# 24-character password
+bash password_generator.sh 24
+
+# Secure preset
 bash password_generator.sh --secure
 
-# Custom length and classes
-bash password_generator.sh -l 24 --uppercase --lowercase --numbers
-
-# Multiple passwords
-bash password_generator.sh -n 5
-
-# Custom charset only (hex)
-bash password_generator.sh -l 40 --only "0123456789abcdef"
-
-# Custom charset with intentional weighting
-bash password_generator.sh -l 40 --only "aaaabc123" --weighted-only
+# Copy to clipboard instead of printing
+bash password_generator.sh -C
 
 # Show estimated entropy
-bash password_generator.sh --entropy
+bash password_generator.sh -E
 
-# Copy to clipboard instead of printing
-bash password_generator.sh --copy
+# Exclude similar characters
+bash password_generator.sh 24 -x
+
+# Generate multiple passwords
+bash password_generator.sh -n 5 20
+
+# Select specific classes
+bash password_generator.sh 24 --uppercase --lowercase --numbers
+
+# Custom character set
+bash password_generator.sh 40 -o "0123456789abcdef"
+
+# Weighted custom character set
+bash password_generator.sh 40 -o "aaaabc123" -W
 ```
----
-## 🔒 Notes on Security
 
-- Password entropy grows with length and charset size.
-- When `--entropy` is used, the displayed value is an **estimate** based on password length and the effective character pool size.
-- By default, repeated characters in `--only` are deduplicated. When `--weighted-only` is used, repeated characters are treated as weighting and the estimate reflects that weighted pool.
-- Because both generators also guarantee class coverage, the estimate should be treated as a practical guide rather than an exact mathematical value.
-- `--copy` helps keep generated passwords out of terminal output, but clipboard managers or OS history tools may still retain copied values.
+## Options
 
-- As a rule of thumb:
-    - ≥16 chars with all classes → strong
-    - ≥32 chars → highly secure and suitable as a default
+Both tools support the same core behavior.
 
-Both versions use cryptographically secure randomness for generating credentials, tokens, or other secrets, with the Python implementation recommended for most users.
+- `-l, --length N`: password length
+- `-n, --count N`: number of passwords to generate
+- `--secure`: enforce a minimum length of 32 and enable all classes if none are selected
+- `--uppercase`: include `A-Z`
+- `--lowercase`: include `a-z`
+- `--numbers`: include `0-9`
+- `--symbols`: include punctuation
+- `-x, --exclude-similar`: exclude characters such as `O`, `0`, `l`, and `1`, along with ambiguous symbols
+- `-o, --only "CHARS"`: use only the supplied characters, with duplicates removed by default
+- `-W, --weighted-only`: preserve duplicate characters in `--only`
+- `-E, --entropy`: append an estimated entropy value in bits
+- `-C, --copy`: copy the generated password to the clipboard instead of printing it; requires `--count 1`
 
----
-## ⚡ Simpler Commands
+## Security Notes
 
-The most common commands now have shorter forms:
+- Password strength increases with both length and character pool size.
+- The entropy shown by `--entropy` is an estimate, not an exact model of the full password-generation process.
+- When class coverage is enforced, the estimate should be treated as a practical guide rather than a formal guarantee.
+- `--copy` reduces exposure in terminal output, but copied passwords may still be retained by clipboard managers or operating system history.
+- The Python version is the recommended implementation for most users.
 
-- `python password_generator.py 20` → 20-character password
-- `python password_generator.py 20 -C` → copy a 20-character password to the clipboard
-- `python password_generator.py 20 -E` → show estimated entropy
-- `python password_generator.py 20 -o "abcdef012345"` → use a custom charset
-- `python password_generator.py 20 -o "aaaabc123" -W` → use a weighted custom charset
+Practical rule of thumb:
 
-The Bash version supports the same shortcuts:
+- 16 or more characters with all classes is strong for many uses
+- 32 characters is an excellent default for high-entropy passwords and secrets
 
-- `bash password_generator.sh 20`
-- `bash password_generator.sh 20 -C`
-- `bash password_generator.sh 20 -E`
+## Notes
+
+- `--copy` requires `--count 1`
+- `--weighted-only` requires `--only`
+- If filtering removes every available character, the tools exit with an error
