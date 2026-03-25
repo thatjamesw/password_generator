@@ -48,7 +48,7 @@ Then visit `http://localhost:8000`.
 ## GitHub Pages
 
 1. Push the repository to GitHub.
-2. Ensure the default branch is `main` or adjust [pages.yml](/Users/jameswright/dev/_mvp/password_gen/.github/workflows/pages.yml) if you deploy from a different branch.
+2. Ensure the default branch is `main` or adjust [`pages.yml`](./.github/workflows/pages.yml) if you deploy from a different branch.
 3. In the repository settings, open Pages.
 4. Set the source to `GitHub Actions`.
 5. Push to `main` or run the workflow manually, then wait for Pages to publish the site.
@@ -60,7 +60,7 @@ The workflow simply uploads the static repository contents and deploys them. The
 - Passwords are generated in-browser using `crypto.getRandomValues`.
 - The shipped app uses plain browser APIs only, with no external runtime dependencies.
 - The page is designed not to make outbound network requests.
-- A restrictive Content Security Policy is set in [index.html](/Users/jameswright/dev/_mvp/password_gen/index.html).
+- A restrictive Content Security Policy is set in [`index.html`](./index.html).
 - Input size is bounded in the UI to avoid accidental oversized generation requests.
 - Clipboard copy depends on browser permissions and secure context rules.
 - Entropy is an estimate based on the active pool and should be treated as guidance, not a formal proof.
