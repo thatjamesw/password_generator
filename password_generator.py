@@ -93,7 +93,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "-C", "--copy",
         action="store_true",
-        help="Copy the generated password to the clipboard instead of printing it. Requires --count 1."
+        help="Copy the generated password or passwords to the clipboard instead of printing them."
     )
 
     return p
@@ -189,6 +189,15 @@ def estimate_entropy_bits(length: int, pools: List[List[str]]) -> float:
     bits_per_char = -sum((count / total) * math.log2(count / total) for count in counts.values())
     return length * bits_per_char
 
+def entropy_label(entropy_bits: float) -> str:
+    if entropy_bits < 50:
+        return "weak"
+    if entropy_bits < 80:
+        return "fair"
+    if entropy_bits < 120:
+        return "strong"
+    return "very strong"
+
 def copy_to_clipboard(text: str) -> None:
     clipboard_commands = [
         ["pbcopy"],
@@ -239,23 +248,27 @@ def main() -> None:
         raise SystemExit("Error: --count must be a positive integer.")
     if args.weighted_only and not args.only:
         raise SystemExit("Error: --weighted-only requires --only.")
-    if args.copy and args.count != 1:
-        raise SystemExit("Error: --copy requires --count 1.")
 
     try:
         entropy_bits = estimate_entropy_bits(args.length, pools) if args.entropy else None
-        for _ in range(args.count):
-            password = generate_password(args.length, pools)
-            if args.copy:
-                copy_to_clipboard(password)
-                if entropy_bits is None:
-                    print("Password copied to clipboard.")
-                else:
-                    print(f"Password copied to clipboard.\t(est. entropy: {entropy_bits:.2f} bits)")
-            elif entropy_bits is None:
-                print(password)
+        entropy_strength = entropy_label(entropy_bits) if entropy_bits is not None else None
+        passwords = [generate_password(args.length, pools) for _ in range(args.count)]
+        if args.copy:
+            copy_to_clipboard("\n".join(passwords))
+            label = "password" if args.count == 1 else "passwords"
+            if entropy_bits is None:
+                print(f"Copied {args.count} {label} to clipboard.")
             else:
-                print(f"{password}\t(est. entropy: {entropy_bits:.2f} bits)")
+                print(
+                    f"Copied {args.count} {label} to clipboard.\t"
+                    f"(est. entropy per password: {entropy_bits:.2f} bits, {entropy_strength})"
+                )
+        elif entropy_bits is None:
+            for password in passwords:
+                print(password)
+        else:
+            for password in passwords:
+                print(f"{password}\t(est. entropy: {entropy_bits:.2f} bits, {entropy_strength})")
     except ValueError as e:
         raise SystemExit(f"Error: {e}")
 

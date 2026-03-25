@@ -62,7 +62,7 @@ The tools aim to make the common path safe:
 - Default output is a 32-character password
 - If no class flags are set, all character classes are included
 - `--only` deduplicates repeated characters by default so accidental weighting does not weaken output
-- `--copy` avoids printing the password directly to the terminal
+- `--copy` avoids printing passwords directly to the terminal and works with single or multiple generated values
 
 If you intentionally want repeated characters in `--only` to change selection probability, use `--weighted-only`.
 
@@ -89,6 +89,9 @@ python3 password_generator.py 24 -x
 
 # Generate multiple passwords
 python3 password_generator.py -n 5 20
+
+# Copy 5 passwords to the clipboard as newline-separated values
+python3 password_generator.py -n 5 20 -C
 
 # Select specific classes
 python3 password_generator.py 24 --uppercase --lowercase --numbers
@@ -124,6 +127,9 @@ bash password_generator.sh 24 -x
 # Generate multiple passwords
 bash password_generator.sh -n 5 20
 
+# Copy 5 passwords to the clipboard as newline-separated values
+bash password_generator.sh -n 5 20 -C
+
 # Select specific classes
 bash password_generator.sh 24 --uppercase --lowercase --numbers
 
@@ -149,12 +155,17 @@ Both tools support the same core behavior.
 - `-o, --only "CHARS"`: use only the supplied characters, with duplicates removed by default
 - `-W, --weighted-only`: preserve duplicate characters in `--only`
 - `-E, --entropy`: append an estimated entropy value in bits
-- `-C, --copy`: copy the generated password to the clipboard instead of printing it; requires `--count 1`
+- `-C, --copy`: copy the generated password or passwords to the clipboard instead of printing them
 
 ## Security Notes
 
 - Password strength increases with both length and character pool size.
 - The entropy shown by `--entropy` is an estimate, not an exact model of the full password-generation process.
+- Entropy output includes a human-readable label:
+- `weak`: under 50 bits
+- `fair`: 50 to 79 bits
+- `strong`: 80 to 119 bits
+- `very strong`: 120 bits and above
 - When class coverage is enforced, the estimate should be treated as a practical guide rather than a formal guarantee.
 - `--copy` reduces exposure in terminal output, but copied passwords may still be retained by clipboard managers or operating system history.
 - The Python version is the recommended implementation for most users.
@@ -166,6 +177,6 @@ Practical rule of thumb:
 
 ## Notes
 
-- `--copy` requires `--count 1`
 - `--weighted-only` requires `--only`
+- When `--copy` is used with multiple passwords, they are copied as newline-separated values
 - If filtering removes every available character, the tools exit with an error

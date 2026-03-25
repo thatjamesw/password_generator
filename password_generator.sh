@@ -53,7 +53,7 @@ Options:
   -o, --only "CHARS"       Use these characters only; duplicates are removed unless --weighted-only is set
   -W, --weighted-only      Preserve duplicate characters in --only so repeated chars act as weighting
   -E, --entropy            Append an estimated entropy value in bits to each password
-  -C, --copy               Copy the generated password to the clipboard instead of printing it (requires --count 1)
+  -C, --copy               Copy the generated password or passwords to the clipboard instead of printing them
   -h, --help               Show this help
 
 Notes:
@@ -230,6 +230,22 @@ estimate_entropy_bits() {
   }'
 }
 
+entropy_label() {
+  local bits="$1"
+
+  awk -v bits="$bits" 'BEGIN {
+    if (bits < 50) {
+      print "weak"
+    } else if (bits < 80) {
+      print "fair"
+    } else if (bits < 120) {
+      print "strong"
+    } else {
+      print "very strong"
+    }
+  }'
+}
+
 copy_to_clipboard() {
   local text="$1"
 
@@ -354,33 +370,50 @@ if $WEIGHTED_ONLY && [[ -z "$ONLY_SET" ]]; then
   echo "Error: --weighted-only requires --only." >&2
   exit 1
 fi
-if $COPY_TO_CLIPBOARD && (( COUNT != 1 )); then
-  echo "Error: --copy requires --count 1." >&2
-  exit 1
-fi
 
 # -------- Build pools & generate --------
 build_pools
 
 ENTROPY_BITS=""
+ENTROPY_STRENGTH=""
 if $SHOW_ENTROPY; then
   ENTROPY_BITS="$(estimate_entropy_bits "$LENGTH" "${POOLS[@]}")"
+  ENTROPY_STRENGTH="$(entropy_label "$ENTROPY_BITS")"
 fi
 
+PASSWORDS=()
 for (( c=0; c<COUNT; c++ )); do
   if ! pw="$(generate_password "$LENGTH" "${POOLS[@]}")"; then
     exit 1
   fi
-  if $COPY_TO_CLIPBOARD; then
-    copy_to_clipboard "$pw"
-    if $SHOW_ENTROPY; then
-      printf 'Password copied to clipboard.\t(est. entropy: %s bits)\n' "$ENTROPY_BITS"
-    else
-      echo "Password copied to clipboard."
-    fi
-  elif $SHOW_ENTROPY; then
-    printf '%s\t(est. entropy: %s bits)\n' "$pw" "$ENTROPY_BITS"
-  else
-    echo "$pw"
-  fi
+  PASSWORDS+=("$pw")
 done
+
+if $COPY_TO_CLIPBOARD; then
+  clipboard_payload=""
+  for pw in "${PASSWORDS[@]}"; do
+    if [[ -n "$clipboard_payload" ]]; then
+      clipboard_payload+=$'\n'
+    fi
+    clipboard_payload+="$pw"
+  done
+  copy_to_clipboard "$clipboard_payload"
+  if (( COUNT == 1 )); then
+    label="password"
+  else
+    label="passwords"
+  fi
+  if $SHOW_ENTROPY; then
+    printf 'Copied %s %s to clipboard.\t(est. entropy per password: %s bits, %s)\n' "$COUNT" "$label" "$ENTROPY_BITS" "$ENTROPY_STRENGTH"
+  else
+    printf 'Copied %s %s to clipboard.\n' "$COUNT" "$label"
+  fi
+elif $SHOW_ENTROPY; then
+  for pw in "${PASSWORDS[@]}"; do
+    printf '%s\t(est. entropy: %s bits, %s)\n' "$pw" "$ENTROPY_BITS" "$ENTROPY_STRENGTH"
+  done
+else
+  for pw in "${PASSWORDS[@]}"; do
+    echo "$pw"
+  done
+fi
