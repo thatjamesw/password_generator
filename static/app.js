@@ -50,8 +50,9 @@ const elements = {
   coverageBadge: document.querySelector("#coverage-badge"),
   rulesDescription: document.querySelector("#rules-description"),
   rulesPreview: document.querySelector("#rules-preview"),
-  outputNote: document.querySelector("#output-note"),
   output: document.querySelector("#output"),
+  advancedPanel: document.querySelector(".advanced-panel"),
+  advancedToggleLabel: document.querySelector(".summary-button"),
   typeButtons: [...document.querySelectorAll(".type-pill")],
   numbersCard: document.querySelector("#numbers-card"),
   symbolsCard: document.querySelector("#symbols-card"),
@@ -525,7 +526,7 @@ function updatePolicyPreview() {
   }
 }
 
-function renderOutput(passwords, detail, config) {
+function renderOutput(passwords) {
   const outputText = passwords.join("\n");
   elements.output.textContent = outputText;
   elements.output.classList.toggle("output-batch", passwords.length > 1);
@@ -533,16 +534,6 @@ function renderOutput(passwords, detail, config) {
   elements.downloadButton.disabled = passwords.length === 0;
   elements.metricCount.textContent = String(passwords.length);
 
-  if (config.showEntropy) {
-    const bits =
-      detail.mode === "memorable"
-        ? detail.entropyBits
-        : estimateEntropyBits(config.length, detail.allChars);
-    const label = entropyLabel(bits);
-    elements.outputNote.textContent = `Approximate entropy: ${bits.toFixed(2)} bits (${label}). Clipboard copy works best in secure browser contexts such as GitHub Pages or localhost.`;
-  } else {
-    elements.outputNote.textContent = "Clipboard copy works best in secure browser contexts such as GitHub Pages or localhost.";
-  }
 }
 
 function generatePasswords() {
@@ -580,7 +571,7 @@ function generatePasswords() {
       );
     }
 
-    renderOutput(currentPasswords, detail, config);
+    renderOutput(currentPasswords);
     const label = resultLabelForMode(mode, config.count);
     setStatus(
       `Generated ${config.count} ${label} locally. Ready to copy${config.count === 1 ? "." : " or download."}`,
@@ -590,6 +581,7 @@ function generatePasswords() {
   } catch (error) {
     currentPasswords = [];
     elements.output.textContent = "No output yet.";
+    elements.output.classList.remove("output-batch");
     elements.copyButton.disabled = true;
     elements.downloadButton.disabled = true;
     setStatus(error.message, "error");
@@ -646,6 +638,8 @@ function clearSensitiveState() {
   currentPasswords = [];
   elements.output.textContent = "Output cleared.";
   elements.output.classList.remove("output-batch");
+  elements.copyButton.disabled = true;
+  elements.downloadButton.disabled = true;
   elements.status.textContent = "";
 }
 
@@ -653,6 +647,9 @@ elements.generateButton.addEventListener("click", generatePasswords);
 elements.copyButton.addEventListener("click", copyOutput);
 elements.downloadButton.addEventListener("click", downloadOutput);
 elements.clearButton.addEventListener("click", clearOutput);
+elements.advancedPanel.addEventListener("toggle", () => {
+  elements.advancedToggleLabel.textContent = elements.advancedPanel.open ? "Hide options" : "Show options";
+});
 elements.presetSelect.addEventListener("change", (event) => {
   applyPreset(event.target.value);
   updatePolicyPreview();
@@ -697,4 +694,7 @@ if (!cryptoAvailable()) {
   elements.generateButton.disabled = true;
   elements.copyButton.disabled = true;
   elements.downloadButton.disabled = true;
+  for (const button of elements.typeButtons) {
+    button.disabled = true;
+  }
 }

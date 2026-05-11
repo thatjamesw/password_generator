@@ -12,11 +12,15 @@
 <body>
   <main class="shell shell-tight">
     <section class="panel generator-panel">
-      <div class="panel-head panel-head-tight">
-        <h1>Password Generator</h1>
+      <div class="panel-head">
+        <div>
+          <p class="page-label">Local security tool</p>
+          <h1>Password Generator</h1>
+        </div>
+        <p class="masthead-note">Generate, inspect, copy, and clear browser-only secrets without network calls or storage.</p>
       </div>
-      <div class="panel-body panel-body-tight">
-        <div class="type-switch" role="tablist" aria-label="Password type">
+      <div class="panel-body">
+        <div class="type-switch" role="group" aria-label="Password type">
           <button type="button" class="type-pill active" data-type="default" aria-pressed="true">Random</button>
           <button type="button" class="type-pill" data-type="memorable" aria-pressed="false">Memorable</button>
           <button type="button" class="type-pill" data-type="pin" aria-pressed="false">PIN</button>
@@ -27,14 +31,14 @@
           <div class="result-top">
             <div>
               <p class="result-label">Generated password</p>
-              <div class="inline-note">Refresh to generate locally, then copy the result.</div>
+              <div class="inline-note">Generate locally, then copy or download the result.</div>
             </div>
             <div class="button-row button-row-tight">
-              <button id="generate-button" class="primary">Refresh password</button>
-              <button id="copy-button" class="secondary" disabled>Copy</button>
+              <button id="generate-button" class="primary" type="button">Generate</button>
+              <button id="copy-button" class="secondary" type="button" disabled>Copy</button>
             </div>
           </div>
-          <pre id="output" class="output output-hero">No output yet.</pre>
+          <pre id="output" class="output output-hero" aria-label="Generated output">No output yet.</pre>
           <div class="result-meta">
             <div class="metric-strip">
               <span class="mini-metric"><strong id="metric-strength">n/a</strong><small>Strength</small></span>
@@ -42,13 +46,12 @@
               <span class="mini-metric"><strong id="metric-mode">random</strong><small>Type</small></span>
             </div>
             <div class="button-row button-row-tight">
-              <button id="download-button" class="ghost" disabled>Download .txt</button>
-              <button id="clear-button" class="ghost danger">Clear</button>
+              <button id="download-button" class="ghost" type="button" disabled>Download</button>
+              <button id="clear-button" class="ghost danger" type="button">Clear</button>
             </div>
           </div>
           <div id="status" class="status" aria-live="polite">Ready.</div>
           <div id="policy-summary" class="inline-note">32 characters, random password, generated locally.</div>
-          <div id="output-note" class="inline-note">Clipboard copy works best in secure browser contexts such as GitHub Pages or localhost.</div>
         </section>
 
         <section class="quick-controls">
@@ -84,9 +87,9 @@
           <summary class="advanced-summary">
             <div>
               <strong>Advanced Mode</strong>
-              <span>Batch generation, custom character sets, and policy inspection.</span>
+              <span>Batch generation, custom character sets, and policy review.</span>
             </div>
-            <span class="summary-button">Show advanced options</span>
+            <span class="summary-button">Show options</span>
           </summary>
           <div class="advanced-body">
             <div class="control-grid">
@@ -161,6 +164,6 @@
     </section>
   </main>
 
-  <script type="module" src="./static/app.js"></script>
+  <script type="module" src="./static/app.js?v=20260511-final"></script>
 </body>
 </html>
